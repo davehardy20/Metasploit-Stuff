@@ -1,0 +1,35 @@
+<ruby>
+###########################################################
+#Must set Global RHOSTS via setg RHOSTS xxx.xxx.xxx.xxx/xx#
+###########################################################
+#Check to see if RHOSTS is set Globally
+if (framework.datastore['RHOSTS'] == nil)
+	print_line("Please set RHOSTS globally with this command setg RHOSTS xxx.xxx.xxx.xxx/xx...exiting")
+	return
+end
+ 
+#Populate the datastore with some Hosts
+#######################################
+# Use TCP port scanner module since it suppots pivoting and nmap doesn't
+run_single("use auxiliary/scanner/portscan/tcp")
+run_single("set PORTS 445")
+run_single("set THREADS 10") # You can set this higher if not pivoted (like 100->200)
+run_single("run")
+ 
+#Remove RHOSTS
+run_single("unsetg RHOSTS")
+ 
+#Get into position. changing it in the loop just wastes CPU time
+run_single("use exploit/windows/smb/ms08_067_netapi")
+ 
+framework.db.workspace.hosts.each do |host|
+	host.services.each do |serv|
+		next if not serv.host
+		next if (serv.state != ServiceState::Open)
+		if (serv.port == 445)
+			run_single("set RHOST #{host.address}")
+			run_single("check")
+		end
+	end
+end
+</ruby>

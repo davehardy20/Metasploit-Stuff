@@ -1,0 +1,34 @@
+<ruby>
+###########################################################
+#Must set Global RHOSTS via setg RHOSTS xxx.xxx.xxx.xxx/xx#
+###########################################################
+#Check to see if RHOSTS is set Globally
+if (framework.datastore['RHOSTS'] == nil)
+	print_line("Please set RHOSTS globally with this command setg RHOSTS xxx.xxx.xxx.xxx/xx...exiting")
+	return
+end
+
+#Populate the datastore with some Hosts
+#######################################
+
+#Setup NMAP Options
+nmapopts = "-O -T 5"
+run_single("db_nmap #{nmapopts} #{framework.datastore['RHOSTS']}")
+
+#Remove RHOSTS
+run_single("unsetg RHOSTS")
+
+framework.db.workspace.hosts.each do |host|
+	host.services.each do |serv|
+		next if not serv.host
+		next if (serv.state != ServiceState::Open)
+		if (serv.name =~ /smb/ or serv.name =~ /microsoft-ds/ or serv.name =~ /netbios/ or serv.port == 445 or serv.port == 139 or serv.port == 137)
+			if(serv.port == 445)
+					run_single("use exploit/windows/smb/ms08_067_netapi")
+					run_single("set RHOST #{host.address}")
+					run_single("check")
+			end
+		end
+	end
+end
+</ruby>
