@@ -1,0 +1,38 @@
+<ruby>
+# Generate an up2date list of ports used by exploit modules
+		def get_tcp_port_list
+			# UDP ports
+			udp_ports = [53,67,137,161,123,138,139,500,1434]
+
+			# Ports missing by the autogen
+			additional_ports = [465,587,995,993,5433,50001,50002,1524, 6697, 8787, 41364, 48992, 49663, 59034]
+
+			print_status("Generating list of ports used by Auxiliary Modules")
+			ap = (framework.auxiliary.collect { |n,e| x=e.new; x.datastore['RPORT'].to_i}).compact
+			print_status("Generating list of ports used by Exploit Modules")
+			ep = (framework.exploits.collect { |n,e| x=e.new; x.datastore['RPORT'].to_i}).compact
+
+			# Join both list removing the duplicates
+			port_list = (((ap | ep) - [0,1]) - udp_ports) + additional_ports
+			return port_list
+		end
+
+###########################################################
+#Must set Global RHOSTS via setg RHOSTS xxx.xxx.xxx.xxx/xx#
+###########################################################
+#Check to see if RHOSTS is set Globally
+if (framework.datastore['RHOSTS'] == nil)
+		print_line("")
+		print_line("*****************************************************************************************")
+		print_line("* Please set RHOSTS globally with this command setg RHOSTS xxx.xxx.xxx.xxx/xx...exiting *")
+		print_line("*****************************************************************************************")
+		print_line("")
+	return
+end
+ports = get_tcp_port_list
+run_single("use auxiliary/scanner/portscan/tcp")
+run_single("set THREADS 100")
+run_single("set PORTS #{ports * ","}")
+run_single("run")
+</ruby>
+

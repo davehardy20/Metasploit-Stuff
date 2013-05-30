@@ -1,0 +1,1 @@
+hosts -c address,mac,name,os_name,os_flavor,os_sp,virtual_host,service_count,vuln_count,cred_count,info -o /home/dave/reports/metasploit/hosts.csv
